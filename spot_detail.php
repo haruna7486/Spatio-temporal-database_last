@@ -64,7 +64,7 @@ try {
         <h2>地図</h2>
         <div class="ratio ratio-16x9">
             <iframe
-                src="http://googleusercontent.com/maps/google.com/7"
+                src="http://googleusercontent.com/maps/google.com/18<?php echo 'あなたのAPIキー'; // ← 2. ここを書き換える ?>&q=<?php echo htmlspecialchars($lat); ?>,<?php echo htmlspecialchars($lng); ?>"
                 title="Google Map"
                 allowfullscreen>
             </iframe>
