@@ -51,7 +51,16 @@ try {
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        </nav>
+        <div class="container-fluid">
+            <a class="navbar-brand" href="spots_list_2.php">TDL PhotoSpots</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="spots_list_2.php">スポット一覧</a></li>
+                    <li class="nav-item"><a class="nav-link" href="spot_register_2.html">新規登録</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
     <div class="container mt-4">
         <h1><?php echo htmlspecialchars($spot['spot_name']); ?></h1>
         <p><?php echo nl2br(htmlspecialchars($spot['description'])); ?></p>

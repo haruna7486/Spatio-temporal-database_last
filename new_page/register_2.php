@@ -1,18 +1,15 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // フォームから送信されたデータを取得
     $spot_name = $_POST['spot_name'] ?? '';
     $description = $_POST['description'] ?? '';
     $lat = $_POST['lat'] ?? '';
     $lng = $_POST['lng'] ?? '';
     $celebrity_info = $_POST['celebrity_info'] ?? '';
 
-    // バリデーション
     if (empty($spot_name) || !is_numeric($lat) || !is_numeric($lng)) {
         die("入力エラー：スポット名と位置情報は必須です。");
     }
 
-    // 写真アップロード処理
     $photo_filename = '';
     if (isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = 'uploads/';
@@ -23,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("登録エラー：写真のアップロードに失敗しました。");
     }
 
-    // データベース接続
     $host = 'localhost';
     $dbname = 's2422074'; // あなたのユーザー名
     $user = 's2422074';
@@ -35,7 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $dbh->beginTransaction();
 
-        // 1. photospotsテーブルに場所を登録
         $sql_spot = "INSERT INTO photospots (spot_name, description, location) VALUES (:spot_name, :description, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)) RETURNING id";
         $stmt_spot = $dbh->prepare($sql_spot);
         $stmt_spot->bindParam(':spot_name', $spot_name);
@@ -45,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt_spot->execute();
         $new_spot_id = $stmt_spot->fetchColumn();
 
-        // 2. photosテーブルに写真を登録
         $sql_photo = "INSERT INTO photos (spot_id, filename, celebrity_info) VALUES (:spot_id, :filename, :celebrity_info)";
         $stmt_photo = $dbh->prepare($sql_photo);
         $stmt_photo->bindParam(':spot_id', $new_spot_id);
@@ -55,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $dbh->commit();
 
-        echo "登録完了！<a href='spots_list.php'>一覧に戻る</a>";
+        echo "登録完了！<a href='spots_list_2.php'>一覧に戻る</a>";
 
     } catch (PDOException $e) {
         $dbh->rollBack();
