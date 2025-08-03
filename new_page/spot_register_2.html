@@ -1,79 +1,71 @@
-<?php
-// データベースへの接続設定
-$host = 'localhost'; 
-$dbname = 's2422074';
-$user = 's2422074'; 
-$password = '6rORn2uT'; 
-
-$dsn = "pgsql:host=$host;dbname=$dbname;user=$user;password=$password";
-
-try {
-    $dbh = new PDO($dsn);
-    // エラーモードを例外に設定
-    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // POSTされたデータがあるか確認
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        die("エラー：このページはフォームからアクセスしてください。");
-    }
-
-    // フォームからのデータを取得して、セキュリティ対策
-    $spot_name = $_POST['spot_name'];
-    $description = $_POST['description'];
-    $location_text = $_POST['location']; // 緯度と経度がカンマ区切りで入ってる
-    // celebrity_flgは、photosテーブルにデフォルト値を入れるため、ここでは取得しない
-    $celebrity_info = 'ここに有名人情報を入力できます'; // デフォルト値を設定
-
-    // 緯度・経度の文字列をパースする
-    // 例: "35.12345,139.12345"という文字列を配列に分解する
-    $coords = explode(',', $location_text);
-    if (count($coords) !== 2) {
-        die("エラー：位置情報の形式が正しくありません。");
-    }
-    $lat = trim($coords[0]);
-    $lng = trim($coords[1]);
-
-    // データベースへの挿入。まずphotospotsテーブルにスポット情報を登録
-    $sql_spot = "INSERT INTO photospots (spot_name, description, location) VALUES (:spot_name, :description, ST_GeomFromText('POINT(' || :lng || ' ' || :lat || ')', 4326))";
-    $stmt_spot = $dbh->prepare($sql_spot);
-
-    // 値をバインドして、安全にSQLを実行
-    $stmt_spot->bindParam(':spot_name', $spot_name, PDO::PARAM_STR);
-    $stmt_spot->bindParam(':description', $description, PDO::PARAM_STR);
-    $stmt_spot->bindParam(':lng', $lng, PDO::PARAM_STR);
-    $stmt_spot->bindParam(':lat', $lat, PDO::PARAM_STR);
-    $stmt_spot->execute();
-
-    // 今登録したスポットのIDを取得
-    $spot_id = $dbh->lastInsertId();
-
-    // ファイルアップロードの処理
-    $photo_filename = '';
-    if (isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = 'uploads/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        $tmp_name = $_FILES['photo_file']['tmp_name'];
-        $photo_filename = basename($_FILES['photo_file']['name']);
-        $destination = $upload_dir . $photo_filename;
-        move_uploaded_file($tmp_name, $destination);
-
-        // photosテーブルに写真情報を挿入する
-        $sql_photo = "INSERT INTO photos (spot_id, filename, celebrity_info) VALUES (:spot_id, :filename, :celebrity_info)";
-        $stmt_photo = $dbh->prepare($sql_photo);
-        $stmt_photo->bindParam(':spot_id', $spot_id, PDO::PARAM_INT);
-        $stmt_photo->bindParam(':filename', $photo_filename, PDO::PARAM_STR);
-        $stmt_photo->bindParam(':celebrity_info', $celebrity_info, PDO::PARAM_STR);
-        $stmt_photo->execute();
-    }
-
-    // 登録成功のメッセージを表示
-    echo "<h1>登録完了！</h1>";
-    echo "<p>新しいフォトスポット「" . htmlspecialchars($spot_name) . "」が登録されました！</p>";
-    echo "<a href='spots_list.php'>スポット一覧に戻る</a>";
-
-} catch (PDOException $e) {
-    die("データベース接続エラー：" . $e->getMessage());
-}
-?>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>新規フォトスポット登録</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 450px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="spots_list_2.php">TDL PhotoSpots</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="spots_list_2.php">スポット一覧</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="spot_register_2.html">新規登録</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h1>新規フォトスポット登録</h1>
+        <p>地図をクリックして、登録したい場所を指定してください。</p>
+        <div id="map" class="mt-3"></div>
+        <form action="register_2.php" method="post" enctype="multipart/form-data" class="mt-4">
+            <div class="mb-3">
+                <label for="spot_name" class="form-label">スポット名</label>
+                <input type="text" class="form-control" id="spot_name" name="spot_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">説明</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="photo_file" class="form-label">代表写真</label>
+                <input type="file" class="form-control" id="photo_file" name="photo_file" required>
+            </div>
+            <div class="mb-3">
+                <label for="celebrity_info" class="form-label">有名人情報（任意）</label>
+                <textarea class="form-control" id="celebrity_info" name="celebrity_info" rows="2"></textarea>
+            </div>
+            <input type="hidden" id="lat" name="lat">
+            <input type="hidden" id="lng" name="lng">
+            <button type="submit" class="btn btn-primary">登録する</button>
+        </form>
+    </div>
+    <script>
+        const map = L.map('map').setView([35.6329, 139.8804], 16);
+        L.tileLayer('https://osm.gdl.jp/styles/osm-bright-ja/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        let marker;
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            document.getElementById('lat').value = lat;
+            document.getElementById('lng').value = lng;
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker([lat, lng]).addTo(map);
+            alert("場所を選択しました。フォームに入力して登録してください。");
+        });
+    </script>
+</body>
+</html>
