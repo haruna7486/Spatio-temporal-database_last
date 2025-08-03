@@ -1,9 +1,9 @@
 <?php
 // データベースへの接続設定 
 $host = 'localhost';
-$dbname = 's2422021';
-$user = 's2422021'; 
-$password = 'mo8tILAq'; 
+$dbname = 's2422074';
+$user = 's2422074'; 
+$password = '6rORn2uT'; 
 $dsn = "pgsql:host=$host;dbname=$dbname;user=$user;password=$password";
 
 try {

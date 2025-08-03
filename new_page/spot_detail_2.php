@@ -1,84 +1,90 @@
 <?php
-// データベースへの接続設定
-// ここは遥菜さんの情報に書き換えてね！
-$host = 'muds.gdl.jp'; // サーバーのホスト名
-$dbname = 'photospots';
-$user = 's000001'; // 例:s000001など、遥菜さんの学籍番号に書き換えてね
-$password = 'YOUR_DB_PASSWORD'; // ★ここにデータベースのパスワードを入れる★
-
-// IPアドレスで接続を試す場合は、こちらの行のコメントを外して使ってみてね！
-// $host = '119.245.135.221';
-
+$spot_id = $_GET['id'] ?? 0;
+if ($spot_id <= 0) {
+    die("スポットIDが正しく指定されていません。");
+}
+$host = 'localhost';
+$dbname = 's2422074';
+$user = 's2422074';
+$password = '6rORn2uT';
 $dsn = "pgsql:host=$host;dbname=$dbname;user=$user;password=$password";
 
 try {
     $dbh = new PDO($dsn);
-    // エラーモードを例外に設定
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // POSTされたデータがあるか確認するぜ！
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        die("エラー：このページはフォームからアクセスしてください。");
-    }
-
-    // フォームからのデータを取得して、セキュリティ対策をするぜ！
-    $spot_name = $_POST['spot_name'];
-    $description = $_POST['description'];
-    $location_text = $_POST['location']; // 緯度と経度がカンマ区切りで入ってるはず！
-    // celebrity_flgは、photosテーブルにデフォルト値を入れるため、ここでは取得しない
-    $celebrity_info = 'ここに有名人情報を入力できます'; // デフォルト値を設定
-
-    // 緯度・経度の文字列をパースするぜ！
-    // 例: "35.12345,139.12345"という文字列を配列に分解する
-    $coords = explode(',', $location_text);
-    if (count($coords) !== 2) {
-        die("エラー：位置情報の形式が正しくありません。");
-    }
-    $lat = trim($coords[0]);
-    $lng = trim($coords[1]);
-
-    // データベースへの挿入！まずphotospotsテーブルにスポット情報を登録するぜ！
-    $sql_spot = "INSERT INTO photospots (spot_name, description, location) VALUES (:spot_name, :description, ST_GeomFromText('POINT(' || :lng || ' ' || :lat || ')', 4326))";
+    // スポット情報を取得
+    $sql_spot = "SELECT id, spot_name, description, ST_AsText(location) AS location_text FROM photospots WHERE id = :id";
     $stmt_spot = $dbh->prepare($sql_spot);
-
-    // 値をバインドして、安全にSQLを実行するぜ！
-    $stmt_spot->bindParam(':spot_name', $spot_name, PDO::PARAM_STR);
-    $stmt_spot->bindParam(':description', $description, PDO::PARAM_STR);
-    $stmt_spot->bindParam(':lng', $lng, PDO::PARAM_STR);
-    $stmt_spot->bindParam(':lat', $lat, PDO::PARAM_STR);
+    $stmt_spot->bindParam(':id', $spot_id);
     $stmt_spot->execute();
-
-    // 今登録したスポットのIDを取得するぜ！
-    $spot_id = $dbh->lastInsertId();
-
-    // ファイルアップロードの処理をするぜ！
-    $photo_filename = '';
-    if (isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = 'uploads/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        $tmp_name = $_FILES['photo_file']['tmp_name'];
-        $photo_filename = basename($_FILES['photo_file']['name']);
-        $destination = $upload_dir . $photo_filename;
-        move_uploaded_file($tmp_name, $destination);
-
-        // photosテーブルに写真情報を挿入するぜ！
-        // 列名を`filename`と`celebrity_info`に修正したぜ！
-        $sql_photo = "INSERT INTO photos (spot_id, filename, celebrity_info) VALUES (:spot_id, :filename, :celebrity_info)";
-        $stmt_photo = $dbh->prepare($sql_photo);
-        $stmt_photo->bindParam(':spot_id', $spot_id, PDO::PARAM_INT);
-        $stmt_photo->bindParam(':filename', $photo_filename, PDO::PARAM_STR);
-        $stmt_photo->bindParam(':celebrity_info', $celebrity_info, PDO::PARAM_STR);
-        $stmt_photo->execute();
+    $spot = $stmt_spot->fetch(PDO::FETCH_ASSOC);
+    if (!$spot) {
+        die("指定されたスポットが見つかりません。");
     }
-
-    // 登録成功のメッセージを表示するぜ！
-    echo "<h1>登録完了！</h1>";
-    echo "<p>新しいフォトスポット「" . htmlspecialchars($spot_name) . "」が登録されました！</p>";
-    echo "<a href='spots_list.php'>スポット一覧に戻る</a>";
-
+    // このスポットに紐づく写真の一覧を取得
+    $sql_photos = "SELECT id, filename, celebrity_info FROM photos WHERE spot_id = :spot_id ORDER BY id";
+    $stmt_photos = $dbh->prepare($sql_photos);
+    $stmt_photos->bindParam(':spot_id', $spot_id);
+    $stmt_photos->execute();
+    $photos = $stmt_photos->fetchAll(PDO::FETCH_ASSOC);
+    // 緯度と経度をパース
+    $location_text = $spot['location_text'];
+    $coords = explode(' ', trim(substr($location_text, 6, -1)));
+    $lng = $coords[0];
+    $lat = $coords[1];
 } catch (PDOException $e) {
     die("データベース接続エラー：" . $e->getMessage());
 }
 ?>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo htmlspecialchars($spot['spot_name']); ?> - 詳細</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 450px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        </nav>
+    <div class="container mt-4">
+        <h1><?php echo htmlspecialchars($spot['spot_name']); ?></h1>
+        <p><?php echo nl2br(htmlspecialchars($spot['description'])); ?></p>
+        <hr>
+        <h2>地図</h2>
+        <div id="map"></div>
+        <hr>
+        <h2>登録された写真</h2>
+        <div class="row">
+            <?php if (empty($photos)): ?>
+                <p>まだ写真が登録されていません。</p>
+            <?php else: ?>
+                <?php foreach ($photos as $photo): ?>
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <img src="uploads/<?php echo htmlspecialchars($photo['filename']); ?>" class="card-img-top" alt="フォトスポットの写真">
+                            <div class="card-body">
+                                <p class="card-text"><?php echo nl2br(htmlspecialchars($photo['celebrity_info'])); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+    <script>
+        const lat = <?php echo json_encode($lat); ?>;
+        const lng = <?php echo json_encode($lng); ?>;
+        const map = L.map('map').setView([lat, lng], 17);
+        L.tileLayer('https://osm.gdl.jp/styles/osm-bright-ja/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        L.marker([lat, lng]).addTo(map).bindPopup('<?php echo json_encode($spot['spot_name']); ?>');
+    </script>
+</body>
+</html>
