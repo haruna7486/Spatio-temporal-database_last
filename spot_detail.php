@@ -4,7 +4,7 @@
 $host = 'muds.gdl.jp'; 
 $dbname = 'photospots';
 $user = 's2422074'; 
-$password = '6rORn2uT'; 
+$password = 'MojuaOmb'; 
 
 
 
