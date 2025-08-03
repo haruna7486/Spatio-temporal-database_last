@@ -1,6 +1,5 @@
 <?php
 // データベースへの接続設定
-
 $host = 'localhost'; 
 $dbname = 's2422021';
 $user = 's2422021'; 
