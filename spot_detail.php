@@ -1,13 +1,12 @@
 <?php
 // データベースへの接続設定
-// ここは遥菜さんの情報に書き換えてね！
-$host = 'muds.gdl.jp'; // サーバーのホスト名
-$dbname = 'photospots';
-$user = 's2422074'; // 例:s000001など、遥菜さんの学籍番号に書き換えてね
-$password = '6rORn2uT'; // ★ここにデータベースのパスワードを入れる★
 
-// IPアドレスで接続を試す場合は、こちらの行のコメントを外して使ってみてね！
-// $host = '119.245.135.221';
+$host = 'muds.gdl.jp'; 
+$dbname = 'photospots';
+$user = 's2422074'; 
+$password = '6rORn2uT'; 
+
+
 
 $dsn = "pgsql:host=$host;dbname=$dbname;user=$user;password=$password";
 
@@ -16,7 +15,8 @@ try {
     // エラーモードを例外に設定
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $sql = "SELECT id, name, description FROM photospots ORDER BY id";
+    // SQL文の修正！データベースの列名に合わせて「spot_name」に変更したぜ！
+    $sql = "SELECT id, spot_name, description FROM photospots ORDER BY id";
     $stmt = $dbh->prepare($sql);
     $stmt->execute();
     $spots = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -113,7 +113,8 @@ try {
                 <?php foreach ($spots as $spot): ?>
                 <tr>
                     <td><?php echo htmlspecialchars($spot['id']); ?></td>
-                    <td><a href="spot_detail.php?id=<?php echo htmlspecialchars($spot['id']); ?>"><?php echo htmlspecialchars($spot['name']); ?></a></td>
+                    <!-- 属性名を「name」から「spot_name」に修正したぜ！ -->
+                    <td><a href="spot_detail.php?id=<?php echo htmlspecialchars($spot['id']); ?>"><?php echo htmlspecialchars($spot['spot_name']); ?></a></td>
                     <td><?php echo htmlspecialchars($spot['description']); ?></td>
                 </tr>
                 <?php endforeach; ?>
