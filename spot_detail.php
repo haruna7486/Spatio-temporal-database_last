@@ -3,7 +3,7 @@
 $host = 'localhost';
 $dbname = 's2422074';
 $user = 's2422074';
-$password = 'あなたの新しいパスワード'; 
+$password = '6rORn2uT'; 
 $dsn = "pgsql:host=$host;dbname=$dbname;user=$user;password=$password";
 
 try {
