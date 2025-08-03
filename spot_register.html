@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>新規フォトスポット登録</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="spots_list.php">TDL PhotoSpots</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="spots_list.php">スポット一覧</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="spot_register.html">新規登録</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    
+    <div class="container mt-4">
+        <h1>新規フォトスポット登録</h1>
+        <p>
+            Googleマップで登録したい場所を右クリックして緯度・経度を調べ、下のフォームに貼り付けてください
+        </p>
+
+        <form action="register.php" method="post" class="mt-4">
+            <div class="mb-3">
+                <label for="spot_name" class="form-label">スポット名</label>
+                <input type="text" class="form-control" id="spot_name" name="spot_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">説明</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="lat" class="form-label">緯度 (Latitude)</label>
+                <input type="text" class="form-control" id="lat" name="lat" required>
+            </div>
+            <div class="mb-3">
+                <label for="lng" class="form-label">経度 (Longitude)</label>
+                <input type="text" class="form-control" id="lng" name="lng" required>
+            </div>
+            <button type="submit" class="btn btn-primary">登録する</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,124 +1,75 @@
 <?php
-// データベースへの接続設定
-$host = 'localhost'; 
-$dbname = 's2422021';
-$user = 's2422021'; 
-$password = 'mo8tILAq'; 
-
-
-
+// データベースへの接続設定 (はるなさん担当)
+$host = 'localhost';
+$dbname = 's2422074';
+$user = 's2422074';
+$password = 'あなたの新しいパスワード'; 
 $dsn = "pgsql:host=$host;dbname=$dbname;user=$user;password=$password";
 
 try {
     $dbh = new PDO($dsn);
-    // エラーモードを例外に設定
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // SQL文の修正！データベースの列名に合わせて「spot_name」に変更したぜ！
-    $sql = "SELECT id, spot_name, description FROM photospots ORDER BY id";
+    // URLからスポットIDを取得
+    if (!isset($_GET['id'])) { die("エラー：スポットIDが指定されていません。"); }
+    $spot_id = $_GET['id'];
+
+    // SQLを実行して特定のIDのデータを1件取得
+    $sql = "SELECT name, description, ST_AsText(location) AS location_text FROM photospots WHERE id = :id";
     $stmt = $dbh->prepare($sql);
+    $stmt->bindParam(':id', $spot_id, PDO::PARAM_INT);
     $stmt->execute();
-    $spots = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $spot = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$spot) { die("エラー：指定されたスポットが見つかりません。"); }
+
+    // 緯度と経度をパースする
+    $location_text = $spot['location_text'];
+    $coords = explode(' ', trim(substr($location_text, 6, -1)));
+    $lng = $coords[0]; // 経度
+    $lat = $coords[1]; // 緯度
 
 } catch (PDOException $e) {
     die("データベース接続エラー：" . $e->getMessage());
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>フォトスポット一覧</title>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-            color: #333;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #007bff;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        p {
-            margin-bottom: 15px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        th {
-            background-color: #007bff;
-            color: #fff;
-            font-weight: bold;
-        }
-        tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        tr:hover {
-            background-color: #e9ecef;
-        }
-        a {
-            color: #007bff;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-        a:hover {
-            color: #0056b3;
-            text-decoration: underline;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo htmlspecialchars($spot['name']); ?> - スポット詳細</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>フォトスポット一覧</h1>
-        <p>データベースに登録されている情報を表示します。</p>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="spots_list.php">TDL PhotoSpots</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="spots_list.php">スポット一覧</a></li>
+                    <li class="nav-item"><a class="nav-link" href="spot_register.html">新規登録</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-        <p>登録件数: <?php echo count($spots); ?>件</p>
+    <div class="container mt-4">
+        <h1><?php echo htmlspecialchars($spot['name']); ?></h1>
+        <p><?php echo nl2br(htmlspecialchars($spot['description'])); ?></p>
+        <hr>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>スポット名</th>
-                    <th>説明</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($spots as $spot): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($spot['id']); ?></td>
-                    <!-- 属性名を「name」から「spot_name」に修正したぜ！ -->
-                    <td><a href="spot_detail.php?id=<?php echo htmlspecialchars($spot['id']); ?>"><?php echo htmlspecialchars($spot['spot_name']); ?></a></td>
-                    <td><?php echo htmlspecialchars($spot['description']); ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <h2>地図</h2>
+        <div class="ratio ratio-16x9">
+            <iframe
+                src="http://googleusercontent.com/maps/google.com/7"
+                title="Google Map"
+                allowfullscreen>
+            </iframe>
+        </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
