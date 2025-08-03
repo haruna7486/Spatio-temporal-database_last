@@ -2,7 +2,7 @@
 // データベースへの接続設定
 
 $host = 'muds.gdl.jp'; 
-$dbname = 'photospots';
+$dbname = 's2422021';
 $user = 's2422021'; 
 $password = 'mo8tILAq'; 
 
