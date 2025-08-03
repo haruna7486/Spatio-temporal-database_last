@@ -1,6 +1,6 @@
 <?php
 // データベースへの接続設定
-$host = 'muds.gdl.jp'; // サーバーのホスト名
+$host = 'localhost'; // サーバーのホスト名
 $dbname = 's2422021';
 $user = 's2422021'; 
 $password = 'mo8tILAq'; 
