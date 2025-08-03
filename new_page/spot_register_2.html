@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>新規フォトスポット登録</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        #map { height: 450px; cursor: pointer; } /* 地図の高さとカーソルを指定 */
+        #map { height: 450px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -24,14 +23,11 @@
             </div>
         </div>
     </nav>
-
     <div class="container mt-4">
         <h1>新規フォトスポット登録</h1>
-        <p>地図をクリックして，登録したい場所を指定してください．</p>
-
+        <p>地図をクリックして、登録したい場所を指定してください。</p>
         <div id="map" class="mt-3"></div>
-
-        <form action="register.php" method="post" class="mt-4">
+        <form action="register.php" method="post" enctype="multipart/form-data" class="mt-4">
             <div class="mb-3">
                 <label for="spot_name" class="form-label">スポット名</label>
                 <input type="text" class="form-control" id="spot_name" name="spot_name" required>
@@ -40,47 +36,36 @@
                 <label for="description" class="form-label">説明</label>
                 <textarea class="form-control" id="description" name="description" rows="3"></textarea>
             </div>
-            
+            <div class="mb-3">
+                <label for="photo_file" class="form-label">代表写真</label>
+                <input type="file" class="form-control" id="photo_file" name="photo_file" required>
+            </div>
+            <div class="mb-3">
+                <label for="celebrity_info" class="form-label">有名人情報（任意）</label>
+                <textarea class="form-control" id="celebrity_info" name="celebrity_info" rows="2"></textarea>
+            </div>
             <input type="hidden" id="lat" name="lat">
             <input type="hidden" id="lng" name="lng">
-
             <button type="submit" class="btn btn-primary">登録する</button>
         </form>
     </div>
-
     <script>
-        // ▼▼▼ 地図を生成し、クリック操作を追加するJavaScript ▼▼▼
-
-        // 1. 地図を初期化 (東京ディズニーランドを中心に表示)
         const map = L.map('map').setView([35.6329, 139.8804], 16);
-
-        // 2. 大学の地図サーバーから地図タイルを読み込む
         L.tileLayer('https://osm.gdl.jp/styles/osm-bright-ja/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-
-        let marker; // マーカーを保存する変数を準備
-
-        // 3. 地図がクリックされた時の処理
+        let marker;
         map.on('click', function(e) {
-            const lat = e.latlng.lat; // クリックされた地点の緯度
-            const lng = e.latlng.lng; // クリックされた地点の経度
-
-            // フォームのhiddenフィールドに緯度と経度をセットする
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
             document.getElementById('lat').value = lat;
             document.getElementById('lng').value = lng;
-            
-            // すでにマーカーがあれば削除する
             if (marker) {
                 map.removeLayer(marker);
             }
-
-            // クリックした場所に新しいマーカーを立てる
             marker = L.marker([lat, lng]).addTo(map);
-            
             alert("場所を選択しました。フォームに入力して登録してください。");
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
