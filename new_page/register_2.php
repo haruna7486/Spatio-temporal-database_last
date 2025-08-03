@@ -1,14 +1,17 @@
 <?php
 // データベースへの接続設定
-$host = 'localhost'; // サーバーのホスト名
-$dbname = 's2422021';
-$user = 's2422021'; 
-$password = 'mo8tILAq'; 
+
+$host = 'localhost'; 
+$dbname = 's2422074';
+$user = 's2422074'; 
+$password = '6rORn2uT'; 
+
 
 $dsn = "pgsql:host=$host;dbname=$dbname;user=$user;password=$password";
 
 try {
     $dbh = new PDO($dsn);
+    // エラーモードを例外に設定
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // POSTされたデータがあるか確認
@@ -16,32 +19,55 @@ try {
         die("エラー：このページはフォームからアクセスしてください。");
     }
 
-    // ▼▼▼ ここを修正 ▼▼▼
-    // 'lat'と'lng'という別々の名前でデータを直接受け取る
+    // フォームからのデータを取得して、セキュリティ対策
     $spot_name = $_POST['spot_name'];
     $description = $_POST['description'];
-    $lat = $_POST['lat'];
-    $lng = $_POST['lng'];
+    $location_text = $_POST['location']; // 緯度と経度がカンマ区切りで入っていると仮定
+    $celebrity_flg = isset($_POST['celebrity_flg']) ? 1 : 0; // チェックボックスがチェックされていれば1、されていなければ0
 
-    // データが空、または数字でない場合はエラー
-    if (empty($lat) || !is_numeric($lat) || empty($lng) || !is_numeric($lng)) {
-        die("エラー：位置情報が正しくありません。地図をクリックして場所を指定してください。");
+    // 緯度・経度の文字列をパース
+    // 例: "35.12345,139.12345"という文字列を配列に分解する
+    $coords = explode(',', $location_text);
+    if (count($coords) !== 2) {
+        die("エラー：位置情報の形式が正しくありません。");
     }
-    // ▲▲▲ ここまで修正 ▲▲▲
+    $lat = trim($coords[0]);
+    $lng = trim($coords[1]);
 
-
-    // データベースへの挿入。SQLインジェクションを防ぐプリペアドステートメントを使う
-    $sql = "INSERT INTO photospots (spot_name, description, location) VALUES (:spot_name, :description, ST_GeomFromText(:point, 4326))";
-    $stmt = $dbh->prepare($sql);
-
-    // PostGIS用に POINT(経度 緯度) の文字列を作成
-    $point = "POINT(" . $lng . " " . $lat . ")";
+    // データベースへの挿入。まずphotospotsテーブルにスポット情報を登録
+    $sql_spot = "INSERT INTO photospots (spot_name, description, location) VALUES (:spot_name, :description, ST_GeomFromText('POINT(' || :lng || ' ' || :lat || ')', 4326))";
+    $stmt_spot = $dbh->prepare($sql_spot);
 
     // 値をバインドして、安全にSQLを実行
-    $stmt->bindParam(':spot_name', $spot_name, PDO::PARAM_STR);
-    $stmt->bindParam(':description', $description, PDO::PARAM_STR);
-    $stmt->bindParam(':point', $point, PDO::PARAM_STR);
-    $stmt->execute();
+    $stmt_spot->bindParam(':spot_name', $spot_name, PDO::PARAM_STR);
+    $stmt_spot->bindParam(':description', $description, PDO::PARAM_STR);
+    $stmt_spot->bindParam(':lng', $lng, PDO::PARAM_STR);
+    $stmt_spot->bindParam(':lat', $lat, PDO::PARAM_STR);
+    $stmt_spot->execute();
+
+    // 今登録したスポットのIDを取得
+    $spot_id = $dbh->lastInsertId();
+
+    // ファイルアップロードの処理
+    $photo_filename = '';
+    if (isset($_FILES['photo_file']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = 'uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        $tmp_name = $_FILES['photo_file']['tmp_name'];
+        $photo_filename = basename($_FILES['photo_file']['name']);
+        $destination = $upload_dir . $photo_filename;
+        move_uploaded_file($tmp_name, $destination);
+
+        // photosテーブルに写真情報を挿入
+        $sql_photo = "INSERT INTO photos (photospots_id, photo_filename, celebrity_flg) VALUES (:spot_id, :photo_filename, :celebrity_flg)";
+        $stmt_photo = $dbh->prepare($sql_photo);
+        $stmt_photo->bindParam(':spot_id', $spot_id, PDO::PARAM_INT);
+        $stmt_photo->bindParam(':photo_filename', $photo_filename, PDO::PARAM_STR);
+        $stmt_photo->bindParam(':celebrity_flg', $celebrity_flg, PDO::PARAM_INT);
+        $stmt_photo->execute();
+    }
 
     // 登録成功のメッセージを表示
     echo "<h1>登録完了！</h1>";
@@ -51,3 +77,4 @@ try {
 } catch (PDOException $e) {
     die("データベース接続エラー：" . $e->getMessage());
 }
+?>
