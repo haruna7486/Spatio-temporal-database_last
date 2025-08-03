@@ -15,7 +15,7 @@ try {
     $spot_id = $_GET['id'];
 
     // SQLを実行して特定のIDのデータを1件取得
-    $sql = "SELECT name, description, ST_AsText(location) AS location_text FROM photospots WHERE id = :id";
+    $sql = "SELECT spot_name, description, ST_AsText(location) AS location_text FROM photospots WHERE id = :id";
     $stmt = $dbh->prepare($sql);
     $stmt->bindParam(':id', $spot_id, PDO::PARAM_INT);
     $stmt->execute();
@@ -38,7 +38,8 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo htmlspecialchars($spot['name']); ?> - スポット詳細</title>
+    <title><?php echo htmlspecialchars($spot['spot_name']); ?> - スポット詳細</title>
+
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -56,7 +57,7 @@ try {
     </nav>
 
     <div class="container mt-4">
-        <h1><?php echo htmlspecialchars($spot['name']); ?></h1>
+        <h1><?php echo htmlspecialchars($spot['spot_name']); ?></h1>
         <p><?php echo nl2br(htmlspecialchars($spot['description'])); ?></p>
         <hr>
 
