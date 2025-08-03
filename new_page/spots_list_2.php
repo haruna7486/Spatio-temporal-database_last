@@ -38,7 +38,10 @@ try {
         </div>
     </nav>
     <div class="container mt-4">
-        <h1>フォトスポット一覧</h1>
+    <h1>フォトスポット一覧</h1>
+    <p>データベースに登録されている情報を表示</p>
+    
+    <p>登録件数: <?php echo count($spots); ?>件</p>
         <table class="table table-striped table-hover">
           <thead>
             <tr><th>ID</th><th>スポット名</th><th>説明</th></tr>
